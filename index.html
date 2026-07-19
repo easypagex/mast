@@ -468,7 +468,7 @@
   }
 
   /* ---------------- gallery wall + frame + caption plate ---------------- */
-  /* Every artwork below is entirely invented: fictional artists, fictional
+  /*  artwork below is entirely invented: fictional artists, fictional
      titles, fictional movements. Each is rendered as a simplified,
      abstracted color-and-motif impression — a stylized imagined sketch,
      not a copy of anything real. */
@@ -924,8 +924,8 @@
     autoActive = true;
     autoBtn.classList.add('active');
     autoBtn.setAttribute('aria-pressed', 'true');
-    autoLabel.textContent = 'AUTO SHUTTER · ON (every 1.4s)';
-    if(hintEl) hintEl.textContent = 'auto-capturing every 1.4 seconds — tap AUTO SHUTTER to stop';
+    autoLabel.textContent = 'AUTO SHUTTER · ON (every 1s)';
+    if(hintEl) hintEl.textContent = 'auto-capturing every 1 second — tap AUTO SHUTTER to stop';
     takePhoto();
     autoTimer = setInterval(takePhoto, AUTO_INTERVAL_MS);
   }

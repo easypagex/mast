@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📷 Art Booth — Invented Masterworks Camera</title>
+<style>
+  :root{
+    --body-dark:#2e0a26;
+    --body-mid:#7a1f5c;
+    --body-light:#e0559f;
+    --screen-bg:#160410;
+    --cream:#ffeaf6;
+    --cream-dim:#eaa8ca;
+    --shutter-blue:#ff5fa8;
+    --shutter-blue-dark:#c93b7a;
+    --azure:#ff9fd4;
+    --line:#5c1c42;
+    --focus:#ffb0dd;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at top, #c93b8a 0%, #6b1a52 55%, #1a0514 100%);
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    color:var(--cream);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 16px;
+  }
+
+  .hud-font{
+    font-family:'JetBrains Mono','Courier New', monospace;
+    letter-spacing:0.06em;
+  }
+
+  .rig{
+    width:100%;
+    max-width:460px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+  }
+
+  header{
+    text-align:center;
+  }
+  header .kicker{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.35em;
+    color:var(--azure);
+    margin:0 0 6px;
+  }
+  header h1{
+    font-size:26px;
+    margin:0;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:6px 0 0;
+    font-size:13px;
+    color:var(--cream-dim);
+  }
+
+  .camera-body{
+    width:100%;
+    background:
+      linear-gradient(180deg, var(--body-light), var(--body-dark) 70%);
+    border-radius:22px;
+    padding:18px;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.08),
+      inset 0 -6px 12px rgba(0,0,0,0.35);
+    border:1px solid #071230;
+    position:relative;
+  }
+
+  .top-strip{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 6px 12px;
+    font-size:10px;
+    color:var(--cream-dim);
+  }
+  .lens-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--shutter-blue);
+    box-shadow:0 0 8px 1px rgba(255,95,168,0.6);
+    display:inline-block;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+
+  .viewfinder{
+    position:relative;
+    background:var(--screen-bg);
+    border-radius:12px;
+    aspect-ratio:3/4;
+    overflow:hidden;
+    box-shadow:inset 0 0 0 2px #000, inset 0 0 40px rgba(0,0,0,0.8);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .viewfinder svg{
+    width:100%;
+    height:100%;
+  }
+
+  .placeholder-text{
+    color:#41567e;
+    font-size:12px;
+    text-align:center;
+    padding:20px;
+    line-height:1.6;
+  }
+
+  .reticle{
+    position:absolute;
+    width:22px;
+    height:22px;
+    border-color:var(--focus);
+    opacity:0.85;
+    pointer-events:none;
+  }
+  .reticle.tl{top:10px;left:10px;border-top:2px solid;border-left:2px solid;}
+  .reticle.tr{top:10px;right:10px;border-top:2px solid;border-right:2px solid;}
+  .reticle.bl{bottom:10px;left:10px;border-bottom:2px solid;border-left:2px solid;}
+  .reticle.br{bottom:10px;right:10px;border-bottom:2px solid;border-right:2px solid;}
+
+  .rec-indicator{
+    position:absolute;
+    top:12px;
+    left:38px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:10px;
+    color:#ff7fc0;
+    opacity:0;
+    transition:opacity 0.15s;
+  }
+  .rec-indicator.flash{opacity:1;}
+  .rec-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:#ff7fc0;
+  }
+
+  .frame-count{
+    position:absolute;
+    bottom:12px;
+    right:38px;
+    font-size:10px;
+    color:var(--focus);
+  }
+
+  .flash-overlay{
+    position:absolute;
+    inset:0;
+    background:#fff;
+    opacity:0;
+    pointer-events:none;
+  }
+  .flash-overlay.go{
+    animation:flashPop 260ms ease-out;
+  }
+  @keyframes flashPop{
+    0%{opacity:0.9;}
+    100%{opacity:0;}
+  }
+
+  .grain{
+    position:absolute;
+    inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    opacity:0.18;
+    mix-blend-mode:overlay;
+    pointer-events:none;
+  }
+
+  .controls-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    padding:20px 6px 6px;
+  }
+
+  .shutter-btn{
+    width:78px;
+    height:78px;
+    border-radius:50%;
+    border:none;
+    background:
+      radial-gradient(circle at 35% 30%, #7fc4f2, var(--shutter-blue) 55%, var(--shutter-blue-dark) 100%);
+    box-shadow:
+      0 6px 0 var(--shutter-blue-dark),
+      0 10px 18px rgba(0,0,0,0.5),
+      inset 0 2px 4px rgba(255,255,255,0.3);
+    cursor:pointer;
+    position:relative;
+    transition:transform 0.08s, box-shadow 0.08s;
+  }
+  .shutter-btn:active{
+    transform:translateY(5px);
+    box-shadow:
+      0 1px 0 var(--shutter-blue-dark),
+      0 2px 6px rgba(0,0,0,0.5),
+      inset 0 2px 4px rgba(255,255,255,0.3);
+  }
+  .shutter-btn::after{
+    content:'';
+    position:absolute;
+    inset:10px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.25);
+  }
+  .shutter-ring{
+    position:absolute;
+    inset:-8px;
+    border-radius:50%;
+    border:1px solid #04102a;
+  }
+  .shutter-wrap{
+    position:relative;
+  }
+
+  .side-readout{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    font-size:10px;
+    color:var(--cream-dim);
+    min-width:74px;
+  }
+  .side-readout span.val{color:var(--focus);}
+
+  .hint{
+    text-align:center;
+    font-size:11px;
+    color:var(--cream-dim);
+    padding-top:4px;
+  }
+
+  .auto-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    width:100%;
+    margin-top:12px;
+    padding:11px 16px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,0.04);
+    color:var(--cream-dim);
+    font-size:11px;
+    cursor:pointer;
+    transition:background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .auto-btn:hover{
+    border-color:var(--azure);
+  }
+  .auto-btn.active{
+    background:rgba(255,95,168,0.16);
+    border-color:var(--shutter-blue);
+    color:var(--cream);
+  }
+  .auto-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--line);
+    flex-shrink:0;
+  }
+  .auto-btn.active .auto-dot{
+    background:var(--shutter-blue);
+    animation:autoPulse 1s ease-in-out infinite;
+  }
+  @keyframes autoPulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,95,168,0.6); }
+    50%{ box-shadow:0 0 0 5px rgba(255,95,168,0); }
+  }
+
+  .easypagex-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    text-decoration:none;
+    color:var(--body-dark);
+    background:var(--azure);
+    padding:12px 24px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    box-shadow:0 8px 18px -6px rgba(255,159,212,0.55);
+    transition:transform 0.15s, box-shadow 0.15s;
+  }
+  .easypagex-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 12px 22px -6px rgba(255,159,212,0.7);
+  }
+  .easypagex-btn:active{
+    transform:translateY(0);
+  }
+  .easypagex-btn svg{width:16px;height:16px;}
+
+  footer{
+    padding-top:6px;
+    padding-bottom:4px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .flash-overlay.go{ animation:none; }
+    .shutter-btn{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="rig">
+  <header>
+    <p class="kicker hud-font">MODEL IB-09 · IMAGINATION GALLERY SIM</p>
+    <h1>Art Booth</h1>
+    <p>Point, click, capture a masterpiece dreamed up on the spot — 37 invented paintings across five imagined movements.</p>
+  </header>
+
+  <div class="camera-body">
+    <div class="top-strip hud-font">
+      <span><span class="lens-dot"></span>LIVE</span>
+      <span>f/2.8 &nbsp;·&nbsp; ISO 400</span>
+    </div>
+
+    <div class="viewfinder" id="viewfinder">
+      <div class="placeholder-text hud-font">
+        VIEWFINDER EMPTY<br>
+        press shutter to capture an invented masterpiece
+      </div>
+      <div class="reticle tl"></div>
+      <div class="reticle tr"></div>
+      <div class="reticle bl"></div>
+      <div class="reticle br"></div>
+      <div class="rec-indicator hud-font" id="recIndicator"><span class="rec-dot"></span>CAPTURED</div>
+      <div class="frame-count hud-font" id="frameCount">NO. 000</div>
+      <div class="grain"></div>
+      <div class="flash-overlay" id="flashOverlay"></div>
+    </div>
+
+    <div class="controls-row">
+      <div class="side-readout hud-font">
+        <span>SHUTTER</span>
+        <span class="val">1/60</span>
+      </div>
+      <div class="shutter-wrap">
+        <div class="shutter-ring"></div>
+        <button class="shutter-btn" id="shutterBtn" aria-label="Take photo"></button>
+      </div>
+      <div class="side-readout hud-font" style="text-align:right;">
+        <span>ROLL LEFT</span>
+        <span class="val" id="framesLeft">037</span>
+      </div>
+    </div>
+    <p class="hint">tap the blue button to take a photo</p>
+
+    <button class="auto-btn hud-font" id="autoBtn" aria-pressed="false">
+      <span class="auto-dot" id="autoDot"></span>
+      <span id="autoLabel">AUTO SHUTTER · OFF</span>
+    </button>
+  </div>
+
+  <a class="easypagex-btn" href="https://easypagex.github.io" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+      <polyline points="15 3 21 3 21 9"/>
+      <line x1="10" y1="14" x2="21" y2="3"/>
+    </svg>
+    Visit EasyPageX
+  </a>
+
+  <footer></footer>
+</div>
+
+<script>
+(function(){
+  const shutterBtn = document.getElementById('shutterBtn');
+  const viewfinder = document.getElementById('viewfinder');
+  const flashOverlay = document.getElementById('flashOverlay');
+  const recIndicator = document.getElementById('recIndicator');
+  const frameCountEl = document.getElementById('frameCount');
+  const framesLeftEl = document.getElementById('framesLeft');
+  const autoBtn = document.getElementById('autoBtn');
+  const autoLabel = document.getElementById('autoLabel');
+  const hintEl = document.querySelector('.hint');
+
+  let frameNumber = 0;
+  let autoActive = false;
+  let autoTimer = null;
+  const AUTO_INTERVAL_MS = 1400;
+
+  /* ---------------- shutter click sound (Web Audio API, no assets) ---------------- */
+  let audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  function playClickBurst(delay, duration, gainPeak, freq){
+    const ctx = getCtx();
+    const start = ctx.currentTime + delay;
+
+    const bufferSize = Math.floor(ctx.sampleRate * duration);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++){
+      data[i] = (Math.random()*2 - 1);
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.value = freq;
+    bandpass.Q.value = 0.9;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(gainPeak, start + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+    noise.connect(bandpass).connect(gain).connect(ctx.destination);
+    noise.start(start);
+    noise.stop(start + duration + 0.02);
+  }
+
+  function playShutterSound(){
+    playClickBurst(0,     0.045, 0.7, 2400);
+    playClickBurst(0.07,  0.035, 0.55, 1600);
+  }
+
+  /* ---------------- helpers ---------------- */
+
+  function rand(min, max){ return Math.random()*(max-min)+min; }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+  function escapeXml(str){
+    return String(str).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
+  }
+
+  /* ---------------- gallery wall + frame + caption plate ---------------- */
+  /* Every artwork below is entirely invented: fictional artists, fictional
+     titles, fictional movements. Each is rendered as a simplified,
+     abstracted color-and-motif impression — a stylized imagined sketch,
+     not a copy of anything real. */
+
+  const SPOTLIGHTS = ['#f28ac9','#e86fb0','#f0bcd9','#f79fdc'];
+
+  function wallAndFrame(bg){
+    let s = '';
+    s += `<rect x="0" y="0" width="300" height="344" fill="#101c34"/>`;
+    s += `<rect x="0" y="0" width="300" height="200" fill="#16264a" opacity="0.5"/>`;
+    const glow = pick(SPOTLIGHTS);
+    s += `<ellipse cx="150" cy="6" rx="190" ry="90" fill="${glow}" opacity="0.16"/>`;
+    s += `<rect x="0" y="330" width="300" height="14" fill="#050c1c" opacity="0.6"/>`;
+    s += `<rect x="26" y="24" width="252" height="270" fill="#000" opacity="0.35"/>`;
+    s += `<rect x="22" y="20" width="252" height="270" fill="none" stroke="#274a7a" stroke-width="14"/>`;
+    s += `<rect x="22" y="20" width="252" height="270" fill="none" stroke="#ff8fc4" stroke-width="6"/>`;
+    s += `<rect x="34" y="32" width="228" height="246" fill="#0a1224"/>`;
+    return s;
+  }
+
+  function caption(name, artist, category){
+    let s = '';
+    s += `<rect x="0" y="344" width="300" height="56" fill="#08101f" opacity="0.82"/>`;
+    s += `<rect x="0" y="344" width="300" height="2" fill="#ff5fa8" opacity="0.7"/>`;
+    s += `<text x="150" y="368" text-anchor="middle" font-family="Georgia, serif" font-size="15" font-weight="700" fill="#e8f2fc" letter-spacing="0.3">${escapeXml(name)}</text>`;
+    s += `<text x="150" y="384" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="11" fill="#9db8dc">${escapeXml(artist)}</text>`;
+    s += `<text x="150" y="396" text-anchor="middle" font-family="'Courier New', monospace" font-size="8" fill="#5f84b8" letter-spacing="1.4">${escapeXml(category.toUpperCase())}</text>`;
+    return s;
+  }
+
+  function renderScene(art){
+    let s = `<defs><filter id="vivid" x="-20%" y="-20%" width="140%" height="140%">
+      <feColorMatrix type="saturate" values="1.6"/>
+      <feComponentTransfer><feFuncR type="linear" slope="1.12"/><feFuncG type="linear" slope="1.12"/><feFuncB type="linear" slope="1.12"/></feComponentTransfer>
+    </filter></defs>`;
+    s += wallAndFrame(art.bg);
+    s += `<g filter="url(#vivid)"><rect x="39" y="37" width="218" height="236" fill="${art.bg}"/>${art.draw()}</g>`;
+    s += caption(art.name, art.artist, art.category);
+    return `<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+  }
+
+  /* ---------------- Velvet Strata — an invented age of mythic portraiture (8) ---------------- */
+
+  const VELVET_STRATA = [
+    { name:"The Cartographer's Daughter", artist:'Ines Vallory', category:'Velvet Strata', bg:'#40325a', draw:()=>{
+      let s = '';
+      s += `<path d="M92,90 Q92,225 150,252 Q208,225 208,90 Q208,46 150,44 Q92,46 92,90 Z" fill="#d9b98a" stroke="#5c4326" stroke-width="1.5"/>`;
+      s += `<path d="M92,95 Q64,148 78,236" fill="none" stroke="#241f3a" stroke-width="16" opacity="0.85" stroke-linecap="round"/>`;
+      s += `<path d="M208,95 Q236,148 222,236" fill="none" stroke="#241f3a" stroke-width="16" opacity="0.85" stroke-linecap="round"/>`;
+      for(let i=0;i<10;i++){ s += `<line x1="${rand(45,255).toFixed(0)}" y1="${rand(200,270).toFixed(0)}" x2="${rand(45,255).toFixed(0)}" y2="${rand(200,270).toFixed(0)}" stroke="#7fc4f2" stroke-width="0.6" opacity="0.5"/>`; }
+      s += `<path d="M122,150 Q150,168 178,150" fill="none" stroke="#5c4326" stroke-width="2.5" stroke-linecap="round"/>`;
+      s += `<circle cx="130" cy="115" r="4" fill="#241f3a" opacity="0.7"/><circle cx="170" cy="115" r="4" fill="#241f3a" opacity="0.7"/>`;
+      s += `<circle cx="150" cy="240" r="5" fill="#6fd4f7" opacity="0.8"/>`;
+      return s;
+    }},
+    { name:'The Loom of Forgotten Names', artist:'Corvin Adastra', category:'Velvet Strata', bg:'#241f3a', draw:()=>{
+      let s = '';
+      s += `<rect x="70" y="55" width="160" height="180" fill="none" stroke="#7a5a30" stroke-width="6"/>`;
+      for(let i=0;i<9;i++){ s += `<line x1="${80+i*17}" y1="55" x2="${80+i*17}" y2="235" stroke="#3a2c4a" stroke-width="1.5" opacity="0.7"/>`; }
+      for(let i=0;i<8;i++){ s += `<path d="M70,${65+i*21} Q150,${65+i*21+14} 230,${65+i*21}" stroke="${pick(['#6fd4f7','#e8f2fc','#9db8dc'])}" stroke-width="2" fill="none" opacity="0.75"/>`; }
+      s += `<text x="150" y="150" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#e8f2fc" opacity="0.4">???</text>`;
+      return s;
+    }},
+    { name:'Feast for the Glass Whale', artist:'Petra Solenne', category:'Velvet Strata Fresco', bg:'#0e2438', draw:()=>{
+      let s = '';
+      s += `<path d="M50,180 Q150,140 250,180 Q220,220 150,222 Q80,220 50,180 Z" fill="#3a6a94" opacity="0.55"/>`;
+      for(let i=0;i<10;i++){ s += `<path d="M${70+i*17},170 Q${70+i*17},210 ${70+i*17+8},225" stroke="#e8f2fc" stroke-width="4" fill="none" opacity="0.5"/>`; }
+      s += `<rect x="90" y="230" width="120" height="10" fill="#8aa0c9" stroke="#4a5a7a" stroke-width="1.3"/>`;
+      for(let i=0;i<7;i++){ s += `<ellipse cx="${100+i*14}" cy="222" rx="5" ry="6" fill="#e0c9a0"/>`; }
+      return s;
+    }},
+    { name:'The Nine-Fingered King', artist:'Ines Vallory', category:'Velvet Strata', bg:'#3a2a1a', draw:()=>{
+      let s = '';
+      s += `<path d="M100,273 Q95,160 150,140 Q205,160 200,273 Z" fill="#274a7a" stroke="#0a2a4a" stroke-width="1.5"/>`;
+      s += `<circle cx="150" cy="110" r="26" fill="#d9a878"/>`;
+      s += `<path d="M124,90 L150,60 L176,90 Q160,100 150,90 Q140,100 124,90 Z" fill="#d9a441"/>`;
+      s += `<path d="M150,175 Q170,180 185,170" fill="none" stroke="#d9a878" stroke-width="10" stroke-linecap="round"/>`;
+      for(let i=0;i<4;i++){ s += `<circle cx="${172+i*6}" cy="${168-i*1.5}" r="3" fill="#e8f2fc"/>`; }
+      return s;
+    }},
+    { name:'Reliquary of the Singing Bees', artist:'Dorian Kesh', category:'Velvet Strata Interior', bg:'#1a1626', draw:()=>{
+      let s = '';
+      s += `<path d="M110,240 L110,140 Q150,110 190,140 L190,240 Z" fill="#3a2a4a" stroke="#d9a441" stroke-width="2"/>`;
+      s += `<rect x="120" y="230" width="60" height="14" fill="#d9a441" opacity="0.8"/>`;
+      for(let i=0;i<14;i++){
+        const a = (i/14)*Math.PI*2, cx=150+Math.cos(a)*38, cy=140+Math.sin(a)*45;
+        s += `<ellipse cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" rx="4" ry="2.5" fill="#f2c98a" opacity="0.85"/>`;
+      }
+      return s;
+    }},
+    { name:"The Botanist's Wedding to a Storm", artist:'Ambrose Fint', category:'Velvet Strata', bg:'#2c3a5c', draw:()=>{
+      let s = '';
+      s += `<ellipse cx="150" cy="100" rx="60" ry="40" fill="#16264a" opacity="0.8"/>`;
+      s += `<path d="M120,140 L150,130 Q170,150 190,140" fill="none" stroke="#6fd4f7" stroke-width="3"/>`;
+      s += `<path d="M110,180 Q150,160 190,180 Q170,220 150,260 Q130,220 110,180 Z" fill="#e8dcc4" opacity="0.9"/>`;
+      for(let i=0;i<6;i++){ s += `<circle cx="${rand(100,200).toFixed(0)}" cy="${rand(190,255).toFixed(0)}" r="4" fill="#8fae5a" opacity="0.7"/>`; }
+      s += `<path d="M150,70 L146,90 L156,88 L150,105" stroke="#f2e08a" stroke-width="2" fill="none" opacity="0.8"/>`;
+      return s;
+    }},
+    { name:'Court of the Upside-Down Garden', artist:'Corvin Adastra', category:'Velvet Strata', bg:'#1a2a3a', draw:()=>{
+      let s = '';
+      for(let i=0;i<7;i++){
+        const x = 55+i*28;
+        s += `<line x1="${x}" y1="37" x2="${x}" y2="90" stroke="#4a5a30" stroke-width="2"/>`;
+        s += `<ellipse cx="${x}" cy="95" rx="10" ry="14" fill="${pick(['#8fae5a','#c9302a','#f2c98a'])}" opacity="0.85"/>`;
+      }
+      for(let i=0;i<5;i++){ s += `<ellipse cx="${80+i*30}" cy="220" rx="16" ry="10" fill="#e8dcc4" opacity="0.75"/>`; }
+      s += `<rect x="60" y="230" width="180" height="10" fill="#3a2a1a"/>`;
+      return s;
+    }},
+    { name:'The Keeper of Borrowed Shadows', artist:'Petra Solenne', category:'Velvet Strata Interior', bg:'#0a0e1a', draw:()=>{
+      let s = '';
+      s += `<ellipse cx="120" cy="200" rx="22" ry="65" fill="#141828"/>`;
+      s += `<circle cx="120" cy="118" r="15" fill="#0a0e1a" stroke="#274a7a" stroke-width="1"/>`;
+      for(let i=0;i<4;i++){
+        const x = 170+i*20;
+        s += `<rect x="${x}" y="150" width="14" height="20" fill="#0a0e1a" stroke="#6fd4f7" stroke-width="1" opacity="0.7"/>`;
+        s += `<ellipse cx="${x+7}" cy="150" rx="6" ry="10" fill="#1c3560" opacity="0.6"/>`;
+      }
+      return s;
+    }}
+  ];
+
+  /* ---------------- Tideglass School — an invented age of atmosphere and light (7) ---------------- */
+
+  const TIDEGLASS = [
+    { name:'The Migration of Glass Birds', artist:'Selene Marrow', category:'Tideglass School', bg:'#a9d0ec', draw:()=>{
+      let s = '';
+      for(let i=0;i<16;i++){
+        const x=rand(50,240), y=rand(50,180);
+        s += `<path d="M${x.toFixed(0)},${y.toFixed(0)} q10,-8 20,0 q-10,4 -20,0" fill="#e8f2fc" opacity="0.65" stroke="#6fa8d8" stroke-width="0.6"/>`;
+      }
+      s += `<circle cx="200" cy="80" r="20" fill="#f2e08a" opacity="0.6"/>`;
+      s += `<path d="M39,240 Q150,220 257,245 L257,273 L39,273 Z" fill="#5a8a94" opacity="0.5"/>`;
+      return s;
+    }},
+    { name:'Orchard Where the Rain Remembers', artist:'Talia Fenmoor', category:'Tideglass School', bg:'#3a5a4a', draw:()=>{
+      let s = '';
+      for(let i=0;i<5;i++){
+        const x = 65+i*40;
+        s += `<line x1="${x}" y1="230" x2="${x}" y2="130" stroke="#2a3a1a" stroke-width="4"/>`;
+        s += `<ellipse cx="${x}" cy="120" rx="20" ry="16" fill="#6a8a4a" opacity="0.85"/>`;
+      }
+      for(let i=0;i<20;i++){ s += `<line x1="${rand(45,255).toFixed(0)}" y1="${rand(180,270).toFixed(0)}" x2="${rand(45,255).toFixed(0)}" y2="${rand(120,220).toFixed(0)}" stroke="#cfe4f2" stroke-width="0.8" opacity="0.6"/>`; }
+      return s;
+    }},
+    { name:'The Tidepool Symphony', artist:'Rosalind Achette', category:'Tideglass School', bg:'#1a3a44', draw:()=>{
+      let s = '';
+      s += `<ellipse cx="150" cy="220" rx="90" ry="30" fill="#2a5a64" opacity="0.7"/>`;
+      for(let i=0;i<12;i++){
+        const x = rand(80,220), y = 200-i*12;
+        s += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${rand(2,5).toFixed(1)}" fill="#e8f2fc" opacity="${(0.8-i*0.05).toFixed(2)}"/>`;
+      }
+      return s;
+    }},
+    { name:'Windmill of Unspoken Names', artist:'Selene Marrow', category:'Tideglass School', bg:'#cfe0c0', draw:()=>{
+      let s = '';
+      s += `<rect x="146" y="120" width="8" height="130" fill="#5c4a30"/>`;
+      for(let i=0;i<4;i++){
+        const a = i*90;
+        s += `<g transform="rotate(${a} 150 120)"><path d="M150,120 L145,60 Q150,50 155,60 Z" fill="#e8dcc4" stroke="#8a7a5a" stroke-width="1"/></g>`;
+      }
+      s += `<text x="150" y="118" text-anchor="middle" font-family="Georgia, serif" font-size="8" fill="#5c4a30" opacity="0.5">?</text>`;
+      return s;
+    }},
+    { name:'The Hour the Lanterns Bloom', artist:'Talia Fenmoor', category:'Tideglass School', bg:'#16304a', draw:()=>{
+      let s = '';
+      for(let i=0;i<6;i++){
+        const x = 60+i*32, y = 240-((i%3)*40);
+        s += `<line x1="${x}" y1="273" x2="${x}" y2="${y}" stroke="#2a4a3a" stroke-width="2"/>`;
+        s += `<ellipse cx="${x}" cy="${y-14}" rx="10" ry="14" fill="#f2c98a" opacity="0.85"/>`;
+      }
+      return s;
+    }},
+    { name:'Fogbound Market of Floating Fruit', artist:'Rosalind Achette', category:'Tideglass School', bg:'#9aacb8', draw:()=>{
+      let s = '';
+      for(let i=0;i<14;i++){ s += `<circle cx="${rand(50,250).toFixed(0)}" cy="${rand(60,220).toFixed(0)}" r="${rand(6,12).toFixed(0)}" fill="${pick(['#e0855a','#c9302a','#e8c060','#8fae5a'])}" opacity="0.8"/>`; }
+      s += `<rect x="39" y="230" width="218" height="43" fill="#6a7a84" opacity="0.6"/>`;
+      return s;
+    }},
+    { name:'The Kite Fields at the End of Summer', artist:'Selene Marrow', category:'Tideglass School', bg:'#bcd8ec', draw:()=>{
+      let s = '';
+      for(let i=0;i<8;i++){
+        const x=rand(50,240), y=rand(50,150);
+        s += `<polygon points="${x},${y-14} ${x+10},${y} ${x},${y+14} ${x-10},${y}" fill="${pick(['#e8f2fc','#6fa8d8','#f2c98a'])}" opacity="0.85"/>`;
+        s += `<path d="M${x},${y+14} Q${x+5},${y+40} ${x-5},${y+60}" stroke="#7a6a4a" stroke-width="1" fill="none" opacity="0.5"/>`;
+      }
+      s += `<path d="M39,220 Q150,200 257,220 L257,273 L39,273 Z" fill="#8fae5a" opacity="0.6"/>`;
+      return s;
+    }}
+  ];
+
+  /* ---------------- Iron Bloom — an invented mechanical reckoning (7) ---------------- */
+
+  const IRON_BLOOM = [
+    { name:'The Machine That Dreams in Gears', artist:'Viktor Halden', category:'Iron Bloom', bg:'#242424', draw:()=>{
+      let s = '';
+      for(let i=0;i<5;i++){
+        const cx=70+i*30, cy=140+((i%2)*30), r=14+((i%3)*4);
+        s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#6fa8d8" stroke-width="3" opacity="0.8"/>`;
+        s += `<circle cx="${cx}" cy="${cy}" r="3" fill="#6fa8d8"/>`;
+      }
+      for(let i=0;i<10;i++){ s += `<circle cx="${rand(140,240).toFixed(0)}" cy="${rand(60,220).toFixed(0)}" r="4" fill="#e8f2fc" opacity="0.5"/>`; }
+      return s;
+    }},
+    { name:'Portrait of a City Folding Itself', artist:'Marisol Quintane', category:'Iron Bloom', bg:'#1c2a3a', draw:()=>{
+      let s = '';
+      for(let i=0;i<6;i++){
+        const x=50+i*30;
+        s += `<polygon points="${x},250 ${x+15},${250-40-i*8} ${x+30},250" fill="${pick(['#274a7a','#3a5a8a','#0a1830'])}" opacity="0.9"/>`;
+      }
+      s += `<path d="M39,250 L257,250" stroke="#6fd4f7" stroke-width="1" opacity="0.5"/>`;
+      return s;
+    }},
+    { name:'The Last Broadcast of the Copper Choir', artist:'Odd Bregstad', category:'Iron Bloom', bg:'#12203a', draw:()=>{
+      let s = '';
+      for(let i=0;i<3;i++){
+        const x=90+i*60;
+        s += `<line x1="${x}" y1="250" x2="${x}" y2="90" stroke="#d9a441" stroke-width="4"/>`;
+        s += `<line x1="${x-16}" y1="110" x2="${x+16}" y2="110" stroke="#d9a441" stroke-width="2"/>`;
+      }
+      for(let i=0;i<5;i++){ s += `<circle cx="150" cy="${100+i*20}" r="${20+i*10}" fill="none" stroke="#6fd4f7" stroke-width="1" opacity="${(0.5-i*0.08).toFixed(2)}"/>`; }
+      return s;
+    }},
+    { name:'Elegy for the Factory Moths', artist:'Viktor Halden', category:'Iron Bloom', bg:'#2a2420', draw:()=>{
+      let s = '';
+      s += `<rect x="60" y="200" width="180" height="73" fill="#0e0c0a" opacity="0.8"/>`;
+      for(let i=0;i<3;i++){ s += `<rect x="${90+i*40}" y="150" width="12" height="50" fill="#0e0c0a"/>`; }
+      for(let i=0;i<14;i++){
+        const x=rand(60,240), y=rand(60,180);
+        s += `<path d="M${x.toFixed(0)},${y.toFixed(0)} q-10,-6 -14,4 q10,2 14,-4 q10,-6 14,4 q-10,2 -14,-4" fill="#9db8dc" opacity="0.55"/>`;
+      }
+      return s;
+    }},
+    { name:"The Architect's Insomnia", artist:'Marisol Quintane', category:'Iron Bloom', bg:'#0e1626', draw:()=>{
+      let s = '';
+      for(let i=0;i<6;i++){ s += `<line x1="${50+i*30}" y1="37" x2="${50+i*30}" y2="273" stroke="#274a7a" stroke-width="0.6" opacity="0.5"/>`; }
+      for(let i=0;i<6;i++){ s += `<line x1="39" y1="${50+i*35}" x2="257" y2="${50+i*35}" stroke="#274a7a" stroke-width="0.6" opacity="0.5"/>`; }
+      s += `<ellipse cx="150" cy="200" rx="55" ry="26" fill="#0a1224" stroke="#6fd4f7" stroke-width="1" opacity="0.7"/>`;
+      s += `<path d="M100,200 Q150,170 200,200" fill="none" stroke="#6fd4f7" stroke-width="1.5" opacity="0.8"/>`;
+      return s;
+    }},
+    { name:'Nine Streets Under One Umbrella', artist:'Odd Bregstad', category:'Iron Bloom', bg:'#1a2436', draw:()=>{
+      let s = '';
+      s += `<path d="M60,140 A90,50 0 0 1 240,140 Z" fill="#274a7a" stroke="#6fd4f7" stroke-width="2"/>`;
+      for(let i=0;i<7;i++){ s += `<line x1="150" y1="140" x2="${70+i*20}" y2="140" stroke="#0a1224" stroke-width="1"/>`; }
+      s += `<line x1="150" y1="140" x2="150" y2="250" stroke="#0a1224" stroke-width="4"/>`;
+      for(let i=0;i<4;i++){ s += `<rect x="${60+i*45}" y="220" width="24" height="53" fill="#12203a"/>`; }
+      return s;
+    }},
+    { name:"The Turbine's Confession", artist:'Viktor Halden', category:'Iron Bloom', bg:'#141a1a', draw:()=>{
+      let s = '';
+      s += `<circle cx="150" cy="155" r="70" fill="none" stroke="#274a7a" stroke-width="3"/>`;
+      for(let i=0;i<6;i++){
+        const a=(i/6)*Math.PI*2;
+        s += `<g transform="rotate(${(a*180/Math.PI).toFixed(1)} 150 155)"><ellipse cx="150" cy="100" rx="10" ry="30" fill="#6fa8d8" opacity="0.75"/></g>`;
+      }
+      s += `<circle cx="150" cy="155" r="12" fill="#e8f2fc" opacity="0.9"/>`;
+      return s;
+    }}
+  ];
+
+  /* ---------------- Fracture Choir — an invented age of bold flat color (7) ---------------- */
+
+  const FRACTURE_CHOIR = [
+    { name:'The Vending Machine of Small Gods', artist:'Nadia Pryce', category:'Fracture Choir Pop', bg:'#2a5aa0', draw:()=>{
+      let s = '';
+      s += `<rect x="80" y="60" width="140" height="180" fill="#0a1224" stroke="#6fd4f7" stroke-width="3"/>`;
+      for(let r=0;r<3;r++){
+        for(let c=0;c<3;c++){
+          s += `<rect x="${95+c*38}" y="${80+r*50}" width="28" height="38" fill="${pick(['#e8f2fc','#f2c98a','#c9302a','#8fae5a'])}" opacity="0.9"/>`;
+        }
+      }
+      return s;
+    }},
+    { name:'Chorus Line of Traffic Lights', artist:'Nadia Pryce', category:'Fracture Choir Pop', bg:'#101418', draw:()=>{
+      let s = '';
+      for(let i=0;i<5;i++){
+        const x = 60+i*38;
+        s += `<rect x="${x-10}" y="90" width="20" height="70" rx="8" fill="#1c355c"/>`;
+        s += `<circle cx="${x}" cy="105" r="6" fill="#c9302a"/>`;
+        s += `<circle cx="${x}" cy="123" r="6" fill="#f2c98a" opacity="0.5"/>`;
+        s += `<circle cx="${x}" cy="141" r="6" fill="#6fd4f7"/>`;
+      }
+      return s;
+    }},
+    { name:"Tomorrow's Newspaper, Printed Backwards", artist:'Sable Winterbourne', category:'Fracture Choir', bg:'#e2ecf5', draw:()=>{
+      let s = '';
+      for(let i=0;i<10;i++){ s += `<rect x="${39+ (i%2)*109}" y="${37+Math.floor(i/2)*47}" width="105" height="43" fill="none" stroke="#274a7a" stroke-width="1"/>`; }
+      for(let i=0;i<7;i++){ s += `<line x1="55" y1="${55+i*24}" x2="240" y2="${55+i*24}" stroke="#1a2a4a" stroke-width="2" opacity="0.6"/>`; }
+      s += `<text x="150" y="45" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#1a2a4a" transform="scale(-1,1) translate(-300,0)">WƎИ</text>`;
+      return s;
+    }},
+    { name:'The Umbrella Stand Oracle', artist:'Casimir Oyelaran', category:'Fracture Choir', bg:'#3a5aa0', draw:()=>{
+      let s = '';
+      s += `<ellipse cx="150" cy="240" rx="50" ry="14" fill="#0a1224"/>`;
+      for(let i=0;i<6;i++){
+        const x=110+i*8;
+        s += `<line x1="${x}" y1="230" x2="${150+(i-3)*18}" y2="90" stroke="${pick(['#e8f2fc','#c9302a','#f2c98a','#6fd4f7'])}" stroke-width="4" opacity="0.85"/>`;
+      }
+      return s;
+    }},
+    { name:'Drive-In Marquee for a Movie That Never Was', artist:'Nadia Pryce', category:'Fracture Choir Pop', bg:'#1c355c', draw:()=>{
+      let s = '';
+      for(let i=0;i<24;i++){ s += `<circle cx="${39+((i%8)*28)}" cy="${60+(Math.floor(i/8)*30)}" r="6" fill="${pick(['#f2c98a','#6fd4f7','#e8f2fc'])}" opacity="0.85"/>`; }
+      s += `<rect x="60" y="180" width="180" height="60" fill="#0a1224" stroke="#6fd4f7" stroke-width="2"/>`;
+      s += `<text x="150" y="215" text-anchor="middle" font-family="Impact, sans-serif" font-size="16" fill="#f2c98a">THE HOUR</text>`;
+      return s;
+    }},
+    { name:"Inventory of a Giant's Pocket", artist:'Sable Winterbourne', category:'Fracture Choir', bg:'#e8dcc4', draw:()=>{
+      let s = '';
+      const shapes = ['circle','rect','tri'];
+      for(let i=0;i<9;i++){
+        const x=60+((i%3)*70), y=70+(Math.floor(i/3)*70), c=pick(['#c9302a','#274a7a','#6fd4f7','#f2c98a','#0a1224']);
+        const sh = pick(shapes);
+        if(sh==='circle') s += `<circle cx="${x}" cy="${y}" r="22" fill="${c}" opacity="0.85"/>`;
+        else if(sh==='rect') s += `<rect x="${x-20}" y="${y-20}" width="40" height="40" fill="${c}" opacity="0.85"/>`;
+        else s += `<polygon points="${x},${y-24} ${x+22},${y+18} ${x-22},${y+18}" fill="${c}" opacity="0.85"/>`;
+      }
+      return s;
+    }},
+    { name:'Vertical Hum Study', artist:'Sable Winterbourne', category:'Fracture Choir Color Field', bg:'#0e1a30', draw:()=>{
+      let s = '';
+      s += `<rect x="39" y="37" width="218" height="80" fill="#274a7a" opacity="0.9"/>`;
+      s += `<rect x="39" y="117" width="218" height="60" fill="#6fd4f7" opacity="0.7"/>`;
+      s += `<rect x="39" y="177" width="218" height="96" fill="#0a1224" opacity="0.95"/>`;
+      return s;
+    }}
+  ];
+
+  /* ---------------- Ember Atlas — an invented age of vast imagined vistas (8) ---------------- */
+
+  const EMBER_ATLAS = [
+    { name:'The Sea That Swallowed Its Own Map', artist:'Haruo Ishikane', category:'Ember Atlas', bg:'#1a3a5c', draw:()=>{
+      let s = '';
+      s += `<path d="M39,180 Q120,150 200,175 Q230,160 257,175 L257,273 L39,273 Z" fill="#2a5a8a"/>`;
+      for(let i=0;i<8;i++){ s += `<rect x="${rand(60,240).toFixed(0)}" y="${rand(190,260).toFixed(0)}" width="18" height="12" fill="#e8dcc4" opacity="0.6" transform="rotate(${rand(-30,30).toFixed(0)})"/>`; }
+      s += `<circle cx="200" cy="80" r="20" fill="#f2e08a" opacity="0.5"/>`;
+      return s;
+    }},
+    { name:'The Coronation of the Salt Flats', artist:'Cosette Vireaux', category:'Ember Atlas', bg:'#dfe4e0', draw:()=>{
+      let s = '';
+      s += `<rect x="39" y="200" width="218" height="73" fill="#c9ccc4"/>`;
+      s += `<ellipse cx="150" cy="200" rx="18" ry="60" fill="#e8d0a8"/>`;
+      s += `<path d="M136,150 L150,120 L164,150 Q150,158 136,150 Z" fill="#d9a441"/>`;
+      for(let i=0;i<5;i++){ s += `<line x1="${100+i*25}" y1="273" x2="${105+i*25}" y2="210" stroke="#a8b0a4" stroke-width="1" opacity="0.4"/>`; }
+      return s;
+    }},
+    { name:'Where the Mountains Kneel', artist:'Konrad Aschenbrenner', category:'Ember Atlas', bg:'#8ea8c0', draw:()=>{
+      let s = '';
+      s += `<path d="M39,220 Q90,150 130,220 Q160,170 190,220 Q220,180 257,220 L257,273 L39,273 Z" fill="#3a5a7a"/>`;
+      s += `<path d="M39,220 Q90,150 130,220" fill="none" stroke="#e8f2fc" stroke-width="3" opacity="0.6"/>`;
+      s += `<circle cx="90" cy="80" r="16" fill="#f2e08a" opacity="0.5"/>`;
+      return s;
+    }},
+    { name:'The Shipwreck of the Hourglass Fleet', artist:'Wystan Colefax', category:'Ember Atlas', bg:'#2a3a5c', draw:()=>{
+      let s = '';
+      s += `<rect x="39" y="210" width="218" height="63" fill="#12203a" opacity="0.7"/>`;
+      for(let i=0;i<3;i++){
+        const x=90+i*50;
+        s += `<path d="M${x},235 L${x+10},200 L${x+20},235 Z" fill="#e8dcc4" opacity="0.6"/>`;
+        s += `<path d="M${x+10},235 L${x+10},265" stroke="#0a1224" stroke-width="2"/>`;
+      }
+      return s;
+    }},
+    { name:'Vigil for the Drowned Orchard', artist:'Ambrose Fint', category:'Ember Atlas', bg:'#16283c', draw:()=>{
+      let s = '';
+      s += `<rect x="39" y="150" width="218" height="123" fill="#1c3050" opacity="0.75"/>`;
+      for(let i=0;i<4;i++){
+        const x=80+i*40;
+        s += `<line x1="${x}" y1="150" x2="${x}" y2="100" stroke="#2a3a1a" stroke-width="3" opacity="0.6"/>`;
+        s += `<ellipse cx="${x}" cy="95" rx="14" ry="10" fill="#4a5a2a" opacity="0.7"/>`;
+      }
+      for(let i=0;i<10;i++){ s += `<circle cx="${rand(60,240).toFixed(0)}" cy="${rand(180,260).toFixed(0)}" r="3" fill="#f2c98a" opacity="0.7"/>`; }
+      return s;
+    }},
+    { name:'The Gilded Migration of the Cloud Deer', artist:'Ines Vallory', category:'Ember Atlas Ornate', bg:'#b98e2e', draw:()=>{
+      let s = '';
+      for(let i=0;i<20;i++){ s += `<rect x="${rand(39,247).toFixed(0)}" y="${rand(37,265).toFixed(0)}" width="8" height="8" fill="${pick(['#a9762a','#e8c060','#6fd4f7','#274a7a'])}" opacity="0.5"/>`; }
+      for(let i=0;i<3;i++){
+        const x=90+i*45;
+        s += `<ellipse cx="${x}" cy="180" rx="26" ry="16" fill="#f2ede0" opacity="0.85"/>`;
+        s += `<path d="M${x-14},172 L${x-24},150 M${x+14},172 L${x+24},150" stroke="#d9a441" stroke-width="3"/>`;
+        s += `<line x1="${x}" y1="196" x2="${x}" y2="220" stroke="#5c4a30" stroke-width="3"/>`;
+      }
+      return s;
+    }},
+    { name:'Twins of the Salt Mirror', artist:'Marisol Quintane', category:'Ember Atlas Surrealist', bg:'#dfe4e0', draw:()=>{
+      let s = '';
+      s += `<rect x="39" y="155" width="218" height="2" fill="#a8b0a4"/>`;
+      s += `<ellipse cx="150" cy="120" rx="26" ry="58" fill="#e8f2fc" stroke="#a9a8b4" stroke-width="1.3"/>`;
+      s += `<circle cx="150" cy="80" r="13" fill="#d9a878"/>`;
+      s += `<ellipse cx="150" cy="190" rx="26" ry="58" fill="#6fd4f7" stroke="#1a5fa0" stroke-width="1.3" opacity="0.85" transform="scale(1,-1) translate(0,-345)"/>`;
+      s += `<circle cx="150" cy="230" r="13" fill="#d9a878" opacity="0.7"/>`;
+      return s;
+    }},
+    { name:'The Betrothal of Anchor and Kite', artist:'Dorian Kesh', category:'Ember Atlas Interior', bg:'#243424', draw:()=>{
+      let s = '';
+      s += `<path d="M150,80 L150,160 M130,160 Q150,190 170,160 M138,105 L162,105" stroke="#0a1224" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+      s += `<polygon points="150,190 165,220 150,250 135,220" fill="#c9302a" opacity="0.8"/>`;
+      s += `<path d="M150,80 Q170,120 150,190" stroke="#5c4a30" stroke-width="1.5" fill="none" opacity="0.6"/>`;
+      for(let i=0;i<10;i++){ s += `<circle cx="${rand(60,240).toFixed(0)}" cy="${rand(60,260).toFixed(0)}" r="1.5" fill="#e8f2fc" opacity="0.5"/>`; }
+      return s;
+    }}
+  ];
+
+  const ARTWORKS = VELVET_STRATA.concat(TIDEGLASS, IRON_BLOOM, FRACTURE_CHOIR, EMBER_ATLAS);
+
+  /* ---------------- film-roll deck (random order, no repeats until reshuffled) ---------------- */
+
+  let deck = [];
+  function reshuffle(){ deck = shuffle(ARTWORKS.slice()); }
+  function nextArtwork(){
+    if(deck.length === 0) reshuffle();
+    return deck.pop();
+  }
+  reshuffle();
+  framesLeftEl.textContent = String(deck.length).padStart(3,'0');
+
+  /* ---------------- capture flow ---------------- */
+
+  function takePhoto(){
+    playShutterSound();
+
+    flashOverlay.classList.remove('go');
+    void flashOverlay.offsetWidth;
+    flashOverlay.classList.add('go');
+
+    frameNumber++;
+    frameCountEl.textContent = 'NO. ' + String(frameNumber).padStart(3,'0');
+
+    recIndicator.classList.add('flash');
+    setTimeout(()=> recIndicator.classList.remove('flash'), 900);
+
+    const art = nextArtwork();
+    framesLeftEl.textContent = String(deck.length).padStart(3,'0');
+
+    setTimeout(()=>{
+      const svgMarkup = renderScene(art);
+      viewfinder.querySelector('.placeholder-text')?.remove();
+      const existingSvg = viewfinder.querySelector('svg');
+      if(existingSvg) existingSvg.remove();
+      viewfinder.insertAdjacentHTML('afterbegin', svgMarkup);
+    }, 90);
+  }
+
+  shutterBtn.addEventListener('click', takePhoto);
+  shutterBtn.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); takePhoto(); }
+  });
+
+  function startAuto(){
+    autoActive = true;
+    autoBtn.classList.add('active');
+    autoBtn.setAttribute('aria-pressed', 'true');
+    autoLabel.textContent = 'AUTO SHUTTER · ON (every 1.4s)';
+    if(hintEl) hintEl.textContent = 'auto-capturing every 1.4 seconds — tap AUTO SHUTTER to stop';
+    takePhoto();
+    autoTimer = setInterval(takePhoto, AUTO_INTERVAL_MS);
+  }
+
+  function stopAuto(){
+    autoActive = false;
+    autoBtn.classList.remove('active');
+    autoBtn.setAttribute('aria-pressed', 'false');
+    autoLabel.textContent = 'AUTO SHUTTER · OFF';
+    if(hintEl) hintEl.textContent = 'tap the blue button to take a photo';
+    if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+  }
+
+  autoBtn.addEventListener('click', ()=>{
+    if(autoActive) stopAuto(); else startAuto();
+  });
+
+})();
+</script>
+</body>
+</html>
